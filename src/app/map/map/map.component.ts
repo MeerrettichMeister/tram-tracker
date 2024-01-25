@@ -16,44 +16,60 @@ import {filter} from "rxjs";
 export class MapComponent implements AfterViewInit {
   private map: L.Map | undefined;
   private lG: L.LayerGroup<any> | undefined;
+  private intervallId: number
+
   constructor() {
+    this.intervallId = 0;
   }
+
   private initMap() {
     this.map = L.map('map')
     this.map.setView([49.0079, 8.4186], 13);
+    // L.tileLayer('http://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png',
+    //   {
+    //     attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>, Style: <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA 2.0</a> <a href="http://www.openrailwaymap.org/">OpenRailwayMap</a> and OpenStreetMap',
+    //   }).addTo(this.map);
     L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(this.map);
   }
 
 
-
   async ngAfterViewInit(): Promise<void> {
     this.initMap()
     // @ts-ignore
     this.lG = layerGroup().addTo(this.map);
-    await this.getTramData()
+    this.addMarker()
 
   }
 
-  public async addMarker(){
-    // @ts-ignore
-    L.marker().addTo(this.lG);
+  public async addMarker() {
+    this.refreshTramData()
+    this.intervallId = setInterval(() => {
+      this.refreshTramData()
+    }, 10 * 1000)
   }
 
-  private async getTramData() {
+  public removeMarker() {
+    this.lG?.clearLayers();
+    clearInterval(this.intervallId);
+  }
+
+  private async refreshTramData() {
+    this.lG?.clearLayers();
     const baseData = await (await fetch('https://projekte.kvv-efa.de/json?CoordSystem=WGS84')).json()
-    let filtered= []
+    let filtered = []
     for (const baseDatum of baseData) {
-      if (baseDatum['MOTDescr'] === 'Straßenbahn'){
+      if (baseDatum['MOTDescr'] === 'Straßenbahn' || baseDatum['LineNumber'] === 'S2') {
         filtered.push(baseDatum)
       }
     }
-    console.log(filtered)
     // @ts-ignore
     for (const filteredElement of filtered) {
-      // @ts-ignore
-      L.marker([Number(filteredElement['X']),Number(filteredElement['Y'])]).addTo(this.lG)
+      let valX = Number(filteredElement['X']);
+      let valY = Number(filteredElement['Y']);
+      let latExp = L.latLng(valY, valX);
+      this.lG?.addLayer(L.marker(latExp).bindPopup('Linie ' + filteredElement['LineNumber'] + ' nach ' + filteredElement['DirectionText']).openPopup())
     }
   }
 
