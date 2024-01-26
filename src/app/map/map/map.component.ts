@@ -17,7 +17,15 @@ export class MapComponent implements AfterViewInit {
   private map: L.Map | undefined;
   private lG: L.LayerGroup<any> | undefined;
   private intervallId: number
-
+  private lineFilterArray = ['1', '2', '3', '4', '5', 'S2',
+    'S1', 'S11', 'S12',
+    'S4', 'S41', 'S42',
+    'S5', 'S51', 'S52',
+    'S31', 'S32',
+    'S7', 'S71',
+    'S8', 'S81',
+    'S6',
+    'E', '17', '18']
   constructor() {
     this.intervallId = 0;
   }
@@ -47,7 +55,7 @@ export class MapComponent implements AfterViewInit {
     this.refreshTramData()
     this.intervallId = setInterval(() => {
       this.refreshTramData()
-    }, 10 * 1000)
+    }, 6 * 1000)
   }
 
   public removeMarker() {
@@ -60,7 +68,7 @@ export class MapComponent implements AfterViewInit {
     const baseData = await (await fetch('https://projekte.kvv-efa.de/json?CoordSystem=WGS84')).json()
     let filtered = []
     for (const baseDatum of baseData) {
-      if (baseDatum['MOTDescr'] === 'Straßenbahn' || baseDatum['LineNumber'] === 'S2') {
+      if (this.lineFilterArray.indexOf(baseDatum['LineNumber']) >= 0) {
         filtered.push(baseDatum)
       }
     }
